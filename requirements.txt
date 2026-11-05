@@ -1,0 +1,39 @@
+# ============================================================
+# DeepGuard – Python Requirements
+#
+# IMPORTANT: TensorFlow and OpenCV do NOT yet officially support
+# Python 3.14 (as of Nov 2026). To run the full ML pipeline you need
+# Python 3.10–3.12.
+#
+# Option A (Recommended): Create a Python 3.12 venv for the full stack.
+#   conda create -n deepguard python=3.12
+#   OR: winget install Python.Python.3.12
+#
+# Option B: Install only the web-app stack on Python 3.14 (no ML inference).
+#   pip install -r requirements.txt --ignore-requires-python
+# ============================================================
+
+# ── Web framework ──────────────────────────────────────────────
+Flask==3.0.3
+Flask-Login==0.6.3
+Flask-Bcrypt==1.0.1
+Flask-CORS==4.0.1
+Werkzeug==3.0.3
+python-dotenv==1.0.1
+
+# ── Database ────────────────────────────────────────────────────
+pymongo==4.7.3
+
+# ── PDF generation ─────────────────────────────────────────────
+reportlab==4.2.2
+
+# ── Utilities ──────────────────────────────────────────────────
+python-dateutil==2.9.0.post0
+
+# ── AI / ML (Python 3.10–3.12 only) ───────────────────────────
+# Uncomment after setting up a Python 3.12 environment:
+# numpy==1.26.4
+# Pillow==10.4.0
+# opencv-python==4.10.0.84
+# scikit-learn==1.5.1
+# tensorflow==2.16.2

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Video Detection{% endblock %}
+{% block page_title %}Video Detection{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-film me-2"></i>Video Deepfake Detection</h1>
+  <p>Upload a video for frame-by-frame deepfake analysis using our CNN model.</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="dg-card">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;">Upload Video</h3>
+
+      <form id="videoAnalyzeForm" method="POST" action="{{ url_for('video.analyze') }}" enctype="multipart/form-data">
+        <div class="upload-zone" id="videoDropzone" style="display:flex;flex-direction:column;align-items:center;">
+          <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <div class="upload-title">Drag &amp; drop your video here</div>
+          <div class="upload-sub">or</div>
+          <button type="button" id="videoBrowseBtn" class="btn-dg" style="margin-top:12px;">
+            <i class="fa-solid fa-folder-open"></i> Browse Files
+          </button>
+          <div class="upload-sub" style="margin-top:12px;">Supports: MP4, AVI, MOV, MKV — Max 100 MB</div>
+          <input type="file" id="videoFileInput" name="file" accept=".mp4,.avi,.mov,.mkv" style="display:none;">
+        </div>
+
+        <div id="videoPreviewSection" style="display:none;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <video id="previewVid" controls style="max-width:100%;max-height:260px;border-radius:12px;border:1px solid var(--border-color);"></video>
+          </div>
+          <div class="dg-card" style="padding:14px;background:var(--bg-secondary);">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div style="font-weight:600;font-size:14px;" id="videoFileName">–</div>
+                <div style="font-size:12px;color:var(--text-muted);" id="videoFileSize">–</div>
+              </div>
+              <button type="button" id="videoRemoveBtn" class="btn-dg-outline btn-sm" style="color:var(--fake);border-color:var(--fake);">
+                <i class="fa-solid fa-xmark"></i> Remove
+              </button>
+            </div>
+          </div>
+          <button type="submit" id="videoAnalyzeBtn" class="btn-dg w-100" style="margin-top:14px;justify-content:center;padding:13px;font-size:15px;">
+            <i class="fa-solid fa-magnifying-glass"></i> Analyse Video
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="dg-card mb-3">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;"><i class="fa-solid fa-circle-info me-2"></i>Video Analysis Pipeline</h3>
+      {% for num, title, desc in [
+        ('1','Read & Validate','OpenCV opens and validates the video file.'),
+        ('2','Frame Extraction','Samples 1 frame every 30 frames (configurable).'),
+        ('3','Per-Frame CNN','Each frame is resized and run through the model.'),
+        ('4','Aggregation','Suspicious frame ratio determines overall verdict.'),
+        ('5','Result & Report','Frame timeline, stats, and PDF report generated.'),
+      ] %}
+      <div class="d-flex gap-12 mb-3" style="gap:12px;">
+        <div style="width:24px;height:24px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">{{ num }}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;">{{ title }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ desc }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="dg-card">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">Supported Formats</h3>
+      <div class="d-flex gap-2 flex-wrap">
+        {% for fmt in ['MP4', 'AVI', 'MOV', 'MKV'] %}
+        <span style="background:rgba(16,185,129,0.1);color:var(--real);padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;">{{ fmt }}</span>
+        {% endfor %}
+      </div>
+      <hr class="dg-divider">
+      <div style="font-size:12px;color:var(--text-muted);">
+        <i class="fa-solid fa-info-circle me-1"></i>
+        Video processing time depends on file size and duration. Videos are analysed at a configurable frame sampling rate (default: every 30th frame, max 100 frames).
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/video_detection.js') }}"></script>
+{% endblock %}

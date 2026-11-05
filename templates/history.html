@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Analysis History{% endblock %}
+{% block page_title %}Analysis History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-clock-rotate-left me-2"></i>Analysis History</h1>
+  <p>All your past media analyses stored securely.</p>
+</div>
+
+<!-- Filters -->
+<div class="dg-card mb-4">
+  <form method="GET" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search by file name…" value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Filter by Result</label>
+      <select name="filter" class="form-select">
+        <option value="all" {% if filter_pred == 'all' %}selected{% endif %}>All Results</option>
+        <option value="REAL" {% if filter_pred == 'REAL' %}selected{% endif %}>Real</option>
+        <option value="AI-GENERATED" {% if filter_pred == 'AI-GENERATED' %}selected{% endif %}>AI-Generated</option>
+        <option value="DEEPFAKE" {% if filter_pred == 'DEEPFAKE' %}selected{% endif %}>Deepfake</option>
+        <option value="INCONCLUSIVE" {% if filter_pred == 'INCONCLUSIVE' %}selected{% endif %}>Inconclusive</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn-dg w-100">
+        <i class="fa-solid fa-filter"></i> Apply
+      </button>
+    </div>
+    <div class="col-md-2">
+      <a href="{{ url_for('history.index') }}" class="btn-dg-outline w-100" style="justify-content:center;">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+{% if analyses %}
+<div class="dg-card">
+  <div class="table-responsive">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>Analysis ID</th>
+          <th>File Name</th>
+          <th>Type</th>
+          <th>Prediction</th>
+          <th>Confidence</th>
+          <th>Processing Time</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in analyses %}
+        <tr>
+          <td class="mono" style="font-size:11px;color:var(--text-muted);">{{ a._id[:8] }}…</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.file_name or 'N/A' }}</td>
+          <td>
+            <span style="font-size:11px;background:rgba(133,79,108,0.2);padding:2px 8px;border-radius:6px;">
+              {{ (a.file_type or '') | title }}
+            </span>
+          </td>
+          <td>
+            {% set pred = (a.prediction or '') | upper %}
+            {% if 'REAL' in pred and 'AI' not in pred and 'FAKE' not in pred %}
+              <span class="badge-real">Real</span>
+            {% elif 'INCONCLUSIVE' in pred %}
+              <span class="badge-inconc">Inconclusive</span>
+            {% elif a.status == 'model_unavailable' %}
+              <span class="badge-unknown">Model N/A</span>
+            {% elif a.prediction %}
+              <span class="badge-fake">{{ a.prediction[:20] }}</span>
+            {% else %}
+              <span class="badge-unknown">–</span>
+            {% endif %}
+          </td>
+          <td class="mono">
+            {% if a.confidence %}{{ '%.1f' | format(a.confidence) }}%{% else %}–{% endif %}
+          </td>
+          <td class="mono" style="font-size:12px;">
+            {% if a.processing_time %}{{ '%.3f' | format(a.processing_time) }}s{% else %}–{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ a.created_at.strftime('%d %b %Y %H:%M') if a.created_at else 'N/A' }}
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('result.show', analysis_id=a._id) }}" class="btn-dg btn-sm" title="View Result">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              {% if a.status == 'success' %}
+              <form method="POST" action="{{ url_for('report.generate', analysis_id=a._id) }}" style="display:inline;">
+                <button type="submit" class="btn-dg-outline btn-sm" title="Generate Report">
+                  <i class="fa-solid fa-file-pdf"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-between align-items-center mt-3">
+    <div style="font-size:13px;color:var(--text-muted);">Page {{ page }}</div>
+    <nav>
+      <ul class="pagination dg-pagination mb-0" style="gap:4px;">
+        {% if page > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page - 1 }}&filter={{ filter_pred }}&search={{ search }}">‹ Prev</a>
+        </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link">{{ page }}</span>
+        </li>
+        {% if analyses | length == page_size %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page + 1 }}&filter={{ filter_pred }}&search={{ search }}">Next ›</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% else %}
+<div class="empty-state dg-card">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <h3>No analyses found</h3>
+  <p>Try adjusting your filters or upload a new file.</p>
+  <a href="{{ url_for('image.upload_page') }}" class="btn-dg" style="margin-top:12px;">Analyse an Image</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Uploads & generated files (user data - never commit)
+uploads/
+reports/
+
+# Datasets (large binary data)
+dataset/
+
+# Trained models (large binary data - distribute separately)
+models/*.keras
+models/*.h5
+models/*_history.json
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest cache
+.pytest_cache/
+*.pytest.ini

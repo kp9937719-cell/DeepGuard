@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Detection Result{% endblock %}
+{% block page_title %}Detection Result{% endblock %}
+
+{% block content %}
+{% set pred = (analysis.prediction or '') | upper %}
+{% set is_real = 'REAL' in pred and 'AI' not in pred and 'FAKE' not in pred and 'DEEP' not in pred %}
+{% set is_inconc = 'INCONCLUSIVE' in pred %}
+{% set is_model_na = analysis.status == 'model_unavailable' or analysis.status == 'prediction_error' %}
+{% set is_demo = analysis.is_demo %}
+
+<!-- ── Model Not Available Notice ── -->
+{% if is_model_na %}
+<div class="model-notice mb-4">
+  <h3 style="font-size:17px;font-weight:700;margin-bottom:10px;">
+    <i class="fa-solid fa-triangle-exclamation me-2"></i>Model Not Available
+  </h3>
+  <p style="font-size:14px;margin-bottom:14px;">
+    {{ analysis.message or 'The detection model is not loaded.' }}
+  </p>
+  <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:14px 16px;">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--highlight);">
+      Option B – Quick Setup (recommended):
+    </div>
+    <ol style="font-size:12px;margin:0;padding-left:20px;line-height:2.2;color:var(--text-muted);">
+      <li>On any machine with Python 3.12: <code>pip install tensorflow==2.16.2</code></li>
+      <li>Run: <code>python create_demo_models.py</code> inside the DeepGuard folder</li>
+      <li>Copy generated <code>models/image_detector.keras</code> and <code>models/video_detector.keras</code> to this machine</li>
+      <li>Restart with Python 3.12: <code>python app.py</code></li>
+    </ol>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Demo Model / Heuristic Warning ── -->
+{% if is_demo and not is_model_na %}
+{% set is_heuristic = analysis.is_heuristic %}
+<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.35);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+  <i class="fa-solid fa-{% if is_heuristic %}microscope{% else %}flask{% endif %}" style="color:var(--inconclusive);font-size:20px;margin-top:2px;flex-shrink:0;"></i>
+  <div>
+    <div style="font-weight:700;font-size:13px;color:var(--inconclusive);margin-bottom:4px;">
+      {% if is_heuristic %}Heuristic Analysis — No CNN Model Loaded{% else %}Demo Model — Untrained Weights{% endif %}
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);">
+      {% if is_heuristic %}
+        This result is based on <strong>statistical image properties</strong> (noise patterns,
+        edge density, colour entropy, EXIF metadata, saturation and luminance variance).
+        It is <strong>not</strong> a trained neural network. To enable CNN-based detection,
+        install <code>Python 3.12</code> and run <code>create_demo_models.py</code>.
+      {% else %}
+        This result was produced by a <strong>demo model with random untrained weights</strong>.
+        Scores are <strong>not meaningful</strong> for real forensics. Train the model on
+        CIFAKE / FaceForensics++ data first. See <code>training/train_image_model.py</code>.
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Prediction Banner ── -->
+{% if not is_model_na %}
+<div class="result-banner {% if is_real %}real{% elif is_inconc %}inconc{% else %}fake{% endif %} mb-4">
+  <div class="result-icon">
+    {% if is_real %}✅{% elif is_inconc %}❓{% else %}⚠️{% endif %}
+  </div>
+  <div class="result-label" style="color:{% if is_real %}var(--real){% elif is_inconc %}var(--inconclusive){% else %}var(--fake){% endif %};">
+    {{ analysis.prediction or 'UNKNOWN' }}
+  </div>
+  <div class="result-conf">Confidence: {{ '%.2f' | format(analysis.confidence or 0) }}%</div>
+  {% if is_demo %}
+  <div style="font-size:11px;margin-top:6px;color:var(--inconclusive);">⚠ Demo model – scores not meaningful</div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+  <!-- ── Left: Media preview + file info ── -->
+  <div class="col-lg-5">
+    <div class="dg-card mb-3">
+      <div class="section-title">Media Preview</div>
+      {% if analysis.file_type == 'image' %}
+        <div style="text-align:center;">
+          <img src="{{ url_for('serve_upload', user_id=current_user.id, filename=analysis.file_name) }}"
+               alt="{{ analysis.file_name }}"
+               style="max-width:100%;max-height:260px;border-radius:10px;border:1px solid var(--border-color);"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+          <div style="display:none;padding:40px 0;color:var(--text-muted);">
+            <i class="fa-solid fa-image" style="font-size:40px;opacity:0.4;display:block;margin-bottom:8px;"></i>
+            Preview unavailable
+          </div>
+        </div>
+      {% else %}
+        <div style="text-align:center;padding:24px 0;">
+          <i class="fa-solid fa-film" style="font-size:60px;color:var(--accent);display:block;margin-bottom:10px;"></i>
+          <div style="font-size:13px;color:var(--text-muted);">Video preview unavailable in browser</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="dg-card">
+      <div class="section-title">File Information</div>
+      <table class="dg-table">
+        <tbody>
+          <tr><td style="color:var(--text-muted);width:40%;">File Name</td><td class="mono" style="font-size:12px;word-break:break-all;">{{ analysis.file_name or 'N/A' }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Type</td><td>{{ (analysis.file_type or 'N/A') | title }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Format</td><td>{{ (analysis.file_format or 'N/A') | upper }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Size</td><td>{{ '%.2f' | format((analysis.file_size or 0) / 1048576) }} MB</td></tr>
+          <tr>
+            <td style="color:var(--text-muted);">SHA-256</td>
+            <td><span class="mono" style="font-size:10px;word-break:break-all;">{{ analysis.file_hash or 'N/A' }}</span></td>
+          </tr>
+          <tr><td style="color:var(--text-muted);">Uploaded</td><td style="font-size:12px;">{{ analysis.created_at.strftime('%d %b %Y %H:%M') if analysis.created_at else 'N/A' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Right: Analysis results ── -->
+  <div class="col-lg-7">
+
+    <!-- Confidence bars (only if model ran) -->
+    {% if not is_model_na and analysis.real_probability is not none %}
+    <div class="dg-card mb-3">
+      <div class="section-title">Probability Breakdown</div>
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span style="font-size:13px;font-weight:600;color:var(--real);">Real Probability</span>
+          <span class="mono">{{ '%.2f' | format(analysis.real_probability or 0) }}%</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar real" data-width="{{ analysis.real_probability or 0 }}" style="width:0;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="d-flex justify-content-between mb-1">
+          <span style="font-size:13px;font-weight:600;color:var(--fake);">Fake Probability</span>
+          <span class="mono">{{ '%.2f' | format(analysis.fake_probability or 0) }}%</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar fake" data-width="{{ analysis.fake_probability or 0 }}" style="width:0;"></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Model info -->
+    <div class="dg-card mb-3">
+      <div class="section-title">Model Information</div>
+      <table class="dg-table">
+        <tbody>
+          <tr><td style="color:var(--text-muted);width:45%;">Model Name</td><td>{{ analysis.model_name or 'N/A' }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Version</td><td class="mono">{{ analysis.model_version or 'N/A' }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Trained</td>
+              <td>{% if is_model_na %}<span class="badge-inconc">Unavailable</span>{% elif is_demo %}<span class="badge-inconc">Heuristic / Untrained</span>{% else %}<span class="badge-real">Trained CNN</span>{% endif %}</td></tr>
+          {% if not is_model_na %}
+          <tr><td style="color:var(--text-muted);">Risk Level</td>
+              <td><span class="{% if analysis.risk == 'Low' %}badge-real{% elif analysis.risk == 'High' %}badge-fake{% else %}badge-inconc{% endif %}">{{ analysis.risk or 'N/A' }}</span></td></tr>
+          <tr><td style="color:var(--text-muted);">Processing Time</td><td class="mono">{{ '%.3f' | format(analysis.processing_time or 0) }} s</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Video: Frame analysis -->
+    {% if analysis.file_type == 'video' and analysis.frame_analysis %}
+    <div class="dg-card mb-3">
+      <div class="section-title">Frame Analysis</div>
+      <div class="row g-3 mb-3">
+        <div class="col-4 text-center">
+          <div style="font-size:22px;font-weight:800;color:var(--text-light);">{{ analysis.frame_analysis | length }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Frames Analysed</div>
+        </div>
+        <div class="col-4 text-center">
+          <div style="font-size:22px;font-weight:800;color:var(--fake);">{{ analysis.frame_analysis | selectattr('is_suspicious') | list | length }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Suspicious</div>
+        </div>
+        <div class="col-4 text-center">
+          <div style="font-size:22px;font-weight:800;color:var(--real);">{{ analysis.frame_analysis | rejectattr('is_suspicious') | list | length }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Safe</div>
+        </div>
+      </div>
+      <div class="section-title" style="font-size:11px;">Frame Timeline <span style="color:var(--fake);">● suspicious</span> <span style="color:var(--real);margin-left:8px;">● safe</span></div>
+      <div class="frame-timeline">
+        {% for fr in analysis.frame_analysis %}
+        <div class="frame-dot {% if fr.is_suspicious %}suspicious{% else %}safe{% endif %}"
+             title="Frame {{ fr.frame_number }}: {{ fr.fake_probability }}% fake"></div>
+        {% endfor %}
+      </div>
+      <div style="height:200px;margin-top:16px;">
+        <canvas id="frameChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Heuristic Scores Breakdown -->
+    {% if analysis.heuristic_scores %}
+    <div class="dg-card mb-3">
+      <div class="section-title">
+        <i class="fa-solid fa-microscope me-2" style="color:var(--inconclusive);"></i>Heuristic Analysis Breakdown
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+        Each signal contributes to the final fake probability. Higher = more suspicious.
+      </div>
+      {% set labels = {
+        'noise':         'Noise Pattern',
+        'edge_density':  'Edge Density',
+        'color_entropy': 'Colour Entropy',
+        'exif_missing':  'EXIF Absence',
+        'saturation':    'Saturation Level',
+        'luma_variance': 'Luminance Variance'
+      } %}
+      {% for key, val in analysis.heuristic_scores.items() %}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <span style="font-size:12px;color:var(--text-light);">{{ labels.get(key, key) }}</span>
+          <span class="mono" style="font-size:11px;">{{ '%.0f' | format(val * 100) }}%</span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar {% if val > 0.6 %}fake{% elif val < 0.35 %}real{% else %}inconc{% endif %}"
+               data-width="{{ val * 100 }}" style="width:0;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- EXIF Metadata -->
+    {% if analysis.image_metadata and analysis.image_metadata.exif %}
+    <div class="dg-card mb-3">
+      <div class="section-title">EXIF Metadata</div>
+      <table class="dg-table">
+        {% for k, v in analysis.image_metadata.exif.items() %}
+        <tr>
+          <td style="color:var(--text-muted);width:40%;">{{ k }}</td>
+          <td class="mono" style="font-size:12px;word-break:break-all;">{{ v }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Disclaimer -->
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:14px 16px;">
+      <p style="font-size:12px;color:var(--inconclusive);margin:0;">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        <strong>Disclaimer:</strong> This result is generated by an AI model and is probabilistic.
+        It may contain false positives or false negatives. Do not treat this as definitive forensic proof.
+        {% if is_demo %}Results are especially unreliable — this is a demo model with random weights.{% endif %}
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Action buttons -->
+<div class="d-flex gap-3 flex-wrap mt-4">
+  {% if not is_model_na and not is_demo %}
+  <form method="POST" action="{{ url_for('report.generate', analysis_id=analysis._id) }}">
+    <button type="submit" class="btn-dg">
+      <i class="fa-solid fa-file-pdf"></i> Generate PDF Report
+    </button>
+  </form>
+  {% elif is_demo %}
+  <form method="POST" action="{{ url_for('report.generate', analysis_id=analysis._id) }}">
+    <button type="submit" class="btn-dg-outline" title="Report will include heuristic/demo disclaimer">
+      <i class="fa-solid fa-file-pdf"></i> Generate Report
+    </button>
+  </form>
+  {% endif %}
+  <a href="{{ url_for('image.upload_page') }}" class="btn-dg-outline">
+    <i class="fa-solid fa-image"></i> Analyse Another Image
+  </a>
+  <a href="{{ url_for('video.upload_page') }}" class="btn-dg-outline">
+    <i class="fa-solid fa-film"></i> Analyse a Video
+  </a>
+  <a href="{{ url_for('dashboard.index') }}" class="btn-dg-outline">
+    <i class="fa-solid fa-house"></i> Dashboard
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+  {% if analysis.frame_analysis %}
+  const frameData = {{ analysis.frame_analysis | tojson }};
+  const safe = frameData.filter(f => !f.is_suspicious).length;
+  const suspicious = frameData.filter(f => f.is_suspicious).length;
+  initFrameChart('frameChart', safe, suspicious);
+  {% endif %}
+</script>
+{% endblock %}

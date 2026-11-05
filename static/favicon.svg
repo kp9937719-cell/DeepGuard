@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#190019"/>
+  <path d="M32 8 L52 18 L52 34 C52 46 40 54 32 58 C24 54 12 46 12 34 L12 18 Z"
+        fill="#522B5B" stroke="#854F6C" stroke-width="2"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Arial,sans-serif"
+        font-size="22" font-weight="bold" fill="#DFB6B2">DG</text>
+</svg>

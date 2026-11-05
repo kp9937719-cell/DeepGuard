@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-shield-halved me-2"></i>Admin Dashboard</h1>
+  <p>System-wide analytics and management panel.</p>
+</div>
+
+<!-- System Stats -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr));">
+  {% for label, value, icon, color in [
+    ('Total Users', stats.total_users, 'fa-users', 'purple'),
+    ('Total Analyses', stats.total_analyses, 'fa-chart-simple', 'blue'),
+    ('Images', stats.total_images, 'fa-image', 'blue'),
+    ('Videos', stats.total_videos, 'fa-film', 'rose'),
+    ('Real Results', stats.total_real, 'fa-circle-check', 'green'),
+    ('Fake Results', stats.total_fake, 'fa-triangle-exclamation', 'red'),
+    ('Inconclusive', stats.total_inconclusive, 'fa-circle-question', 'amber'),
+    ('PDF Reports', stats.total_reports, 'fa-file-pdf', 'purple'),
+  ] %}
+  <div class="stat-card">
+    <div class="stat-icon {{ color }}"><i class="fa-solid {{ icon }}"></i></div>
+    <div>
+      <div class="stat-value">{{ value }}</div>
+      <div class="stat-label">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Model Status -->
+<div class="dg-card mb-4">
+  <div class="section-title">AI Model Status</div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div style="background:var(--bg-secondary);border-radius:10px;padding:16px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span style="font-weight:600;font-size:14px;">Image Detection Model</span>
+          {% if model_status.image_model.file_exists %}
+          <span class="badge-real">Available</span>
+          {% else %}
+          <span class="badge-fake">Not Found</span>
+          {% endif %}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">Path: <span class="mono">{{ model_status.image_model.path }}</span></div>
+        <div style="font-size:12px;color:var(--text-muted);">Status: {{ model_status.image_model.status }}</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div style="background:var(--bg-secondary);border-radius:10px;padding:16px;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span style="font-weight:600;font-size:14px;">Video Detection Model</span>
+          {% if model_status.video_model.file_exists %}
+          <span class="badge-real">Available</span>
+          {% else %}
+          <span class="badge-fake">Not Found</span>
+          {% endif %}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">Path: <span class="mono">{{ model_status.video_model.path }}</span></div>
+        <div style="font-size:12px;color:var(--text-muted);">Status: {{ model_status.video_model.status }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="dg-card">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="section-title" style="margin-bottom:0;">Recent Analyses (System-Wide)</div>
+    <a href="{{ url_for('admin.users') }}" class="btn-dg-outline btn-sm">Manage Users</a>
+  </div>
+  <div class="table-responsive">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>File</th>
+          <th>Type</th>
+          <th>Prediction</th>
+          <th>Confidence</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in recent_analyses %}
+        <tr>
+          <td class="mono" style="font-size:11px;">{{ a.user_id[:8] }}…</td>
+          <td>{{ a.file_name or 'N/A' }}</td>
+          <td><span style="font-size:11px;background:rgba(133,79,108,0.2);padding:2px 8px;border-radius:6px;">{{ (a.file_type or '') | title }}</span></td>
+          <td>
+            {% set pred = (a.prediction or '') | upper %}
+            {% if 'REAL' in pred and 'AI' not in pred %}
+              <span class="badge-real">Real</span>
+            {% elif 'INCONCLUSIVE' in pred %}
+              <span class="badge-inconc">Inconclusive</span>
+            {% elif a.status == 'model_unavailable' %}
+              <span class="badge-unknown">Model N/A</span>
+            {% elif a.prediction %}
+              <span class="badge-fake">Fake</span>
+            {% else %}
+              <span class="badge-unknown">–</span>
+            {% endif %}
+          </td>
+          <td class="mono">{% if a.confidence %}{{ '%.1f'|format(a.confidence) }}%{% else %}–{% endif %}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ a.created_at.strftime('%d %b %Y') if a.created_at else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Welcome back, {{ current_user.name.split()[0] }} 👋</h1>
+  <p>Here's your DeepGuard analysis overview.</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fa-solid fa-chart-simple"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_analyses }}</div>
+      <div class="stat-label">Total Analyses</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_real }}</div>
+      <div class="stat-label">Real / Authentic</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_fake }}</div>
+      <div class="stat-label">Fake / Manipulated</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="fa-solid fa-circle-question"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_inconclusive }}</div>
+      <div class="stat-label">Inconclusive</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fa-solid fa-image"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_images }}</div>
+      <div class="stat-label">Images Analysed</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon rose"><i class="fa-solid fa-film"></i></div>
+    <div>
+      <div class="stat-value">{{ stats.total_videos }}</div>
+      <div class="stat-label">Videos Analysed</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="section-title">Quick Actions</div>
+<div class="quick-actions mb-4">
+  <a href="{{ url_for('image.upload_page') }}" class="quick-action-btn">
+    <i class="fa-solid fa-image"></i>
+    <span>Analyse Image</span>
+  </a>
+  <a href="{{ url_for('video.upload_page') }}" class="quick-action-btn">
+    <i class="fa-solid fa-film"></i>
+    <span>Analyse Video</span>
+  </a>
+  <a href="{{ url_for('history.index') }}" class="quick-action-btn">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    <span>View History</span>
+  </a>
+  <a href="{{ url_for('report.index') }}" class="quick-action-btn">
+    <i class="fa-solid fa-file-pdf"></i>
+    <span>My Reports</span>
+  </a>
+</div>
+
+<!-- Charts Row -->
+<div class="charts-grid">
+  <!-- Real vs Fake -->
+  <div class="chart-card">
+    <div class="chart-card-title"><i class="fa-solid fa-chart-pie me-2"></i>Detection Breakdown</div>
+    <div class="chart-container" style="height:220px;">
+      <canvas id="realFakeChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Weekly Activity -->
+  <div class="chart-card">
+    <div class="chart-card-title"><i class="fa-solid fa-chart-bar me-2"></i>Weekly Activity</div>
+    <div class="chart-container" style="height:220px;">
+      <canvas id="weeklyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Media Type -->
+  <div class="chart-card">
+    <div class="chart-card-title"><i class="fa-solid fa-chart-pie me-2"></i>Image vs Video</div>
+    <div class="chart-container" style="height:220px;">
+      <canvas id="mediaTypeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="activity-section">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="section-title" style="margin-bottom:0;">Recent Activity</div>
+    <a href="{{ url_for('history.index') }}" class="btn-dg-outline btn-sm">View All</a>
+  </div>
+
+  {% if recent %}
+  <div class="table-responsive">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>File Name</th>
+          <th>Type</th>
+          <th>Prediction</th>
+          <th>Confidence</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in recent %}
+        <tr>
+          <td>
+            <div style="font-weight:500;color:var(--text-light);">{{ a.file_name or 'N/A' }}</div>
+          </td>
+          <td>
+            <span style="font-size:12px;background:rgba(133,79,108,0.2);padding:3px 8px;border-radius:6px;">
+              {{ (a.file_type or 'N/A') | title }}
+            </span>
+          </td>
+          <td>
+            {% set pred = (a.prediction or '') | upper %}
+            {% if 'REAL' in pred %}
+              <span class="badge-real">Real</span>
+            {% elif 'INCONCLUSIVE' in pred %}
+              <span class="badge-inconc">Inconclusive</span>
+            {% elif a.status == 'model_unavailable' %}
+              <span class="badge-unknown">Model Unavailable</span>
+            {% else %}
+              <span class="badge-fake">Fake</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.confidence %}
+              <span class="mono" style="font-size:13px;">{{ '%.1f' | format(a.confidence) }}%</span>
+            {% else %}<span style="color:var(--text-muted);">–</span>{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ a.created_at.strftime('%d %b %Y') if a.created_at else 'N/A' }}
+          </td>
+          <td>
+            <a href="{{ url_for('result.show', analysis_id=a._id) }}" class="btn-dg btn-sm">
+              <i class="fa-solid fa-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <h3>No analyses yet</h3>
+    <p>Upload your first image or video to get started.</p>
+    <a href="{{ url_for('image.upload_page') }}" class="btn-dg" style="margin-top:12px;">Analyse Now</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+  // Initialise charts with data from Flask
+  initRealFakeChart('realFakeChart',
+    {{ stats.total_real }}, {{ stats.total_fake }}, {{ stats.total_inconclusive }});
+  initMediaTypeChart('mediaTypeChart',
+    {{ stats.total_images }}, {{ stats.total_videos }});
+
+  // Fetch weekly activity from API
+  fetch('/api/dashboard/weekly-activity')
+    .then(r => r.json())
+    .then(data => {
+      const labels = data.map(d => d.date);
+      const counts = data.map(d => d.count);
+      initWeeklyChart('weeklyChart', labels, counts);
+    });
+</script>
+{% endblock %}

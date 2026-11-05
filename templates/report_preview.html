@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Report Preview{% endblock %}
+{% block page_title %}Report Preview{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-file-pdf me-2"></i>Report Preview</h1>
+  <p>Preview metadata for report <span class="mono">{{ report.report_id }}</span></p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="dg-card">
+      <div class="section-title">Report Details</div>
+      <table class="dg-table">
+        <tbody>
+          <tr><td style="color:var(--text-muted);width:40%;">Report ID</td><td class="mono">{{ report.report_id }}</td></tr>
+          <tr><td style="color:var(--text-muted);">File Name</td><td>{{ report.get('file_name','N/A') }}</td></tr>
+          <tr><td style="color:var(--text-muted);">Detection Result</td><td>
+            {% set pred = (report.get('prediction','') or '') | upper %}
+            {% if 'REAL' in pred and 'AI' not in pred %}
+              <span class="badge-real">{{ report.get('prediction','N/A') }}</span>
+            {% elif 'INCONCLUSIVE' in pred %}
+              <span class="badge-inconc">{{ report.get('prediction','N/A') }}</span>
+            {% else %}
+              <span class="badge-fake">{{ report.get('prediction','N/A') }}</span>
+            {% endif %}
+          </td></tr>
+          <tr><td style="color:var(--text-muted);">Confidence</td><td class="mono">{{ '%.2f'|format(report.get('confidence',0)) }}%</td></tr>
+          <tr><td style="color:var(--text-muted);">Generated</td><td>{{ report.generated_at.strftime('%d %b %Y %H:%M UTC') if report.generated_at else 'N/A' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="dg-card text-center" style="padding:36px;">
+      <i class="fa-solid fa-file-pdf" style="font-size:64px;color:var(--fake);margin-bottom:16px;display:block;"></i>
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:8px;">PDF Report Ready</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">Your forensic report is ready to download.</p>
+      <a href="{{ url_for('report.download', report_id=report.report_id) }}" class="btn-dg" style="justify-content:center;">
+        <i class="fa-solid fa-download"></i> Download PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{{ url_for('report.index') }}" class="btn-dg-outline">
+    <i class="fa-solid fa-arrow-left"></i> Back to Reports
+  </a>
+</div>
+{% endblock %}

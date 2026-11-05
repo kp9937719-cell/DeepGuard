@@ -1,0 +1,51 @@
+/* ============================================================
+   DeepGuard – Responsive Stylesheet
+   ============================================================ */
+
+/* ── Tablet (≤1024px) ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .sidebar { width: 220px; min-width: 220px; }
+  .main-content { margin-left: 220px; }
+}
+
+/* ── Mobile (≤768px) ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+    min-width: 260px;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .main-content { margin-left: 0; }
+  .sidebar-toggle { display: flex; align-items: center; gap: 8px; }
+
+  .topbar { padding: 10px 16px; }
+  .page-content { padding: 16px; }
+
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 22px; }
+
+  .dg-table { font-size: 13px; }
+  .dg-table th, .dg-table td { padding: 10px 10px; }
+
+  .result-banner .result-label { font-size: 20px; }
+  .result-banner .result-icon  { font-size: 40px; }
+}
+
+/* ── Small mobile (≤480px) ───────────────────────────────── */
+@media (max-width: 480px) {
+  h1 { font-size: 20px !important; }
+  .btn-dg, .btn-dg-outline { padding: 9px 16px; font-size: 13px; }
+  .upload-zone { padding: 32px 16px; }
+  .dg-card { padding: 16px; }
+}
+
+/* ── Landing page responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-section { padding: 60px 20px; }
+  .hero-title { font-size: 32px !important; }
+  .hero-subtitle { font-size: 16px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+}

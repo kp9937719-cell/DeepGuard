@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Report Center{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-file-pdf me-2"></i>Report Center</h1>
+  <p>Download and manage your AI forensic detection reports.</p>
+</div>
+
+<!-- Filter bar -->
+<div class="dg-card mb-4">
+  <form method="GET" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search by file name…" value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Filter by Result</label>
+      <select name="status" class="form-select">
+        <option value="all" {% if filter_status == 'all' %}selected{% endif %}>All</option>
+        <option value="REAL" {% if filter_status == 'REAL' %}selected{% endif %}>Real</option>
+        <option value="FAKE" {% if filter_status == 'FAKE' %}selected{% endif %}>Fake</option>
+        <option value="INCONCLUSIVE" {% if filter_status == 'INCONCLUSIVE' %}selected{% endif %}>Inconclusive</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn-dg w-100"><i class="fa-solid fa-filter"></i> Apply</button>
+    </div>
+    <div class="col-md-2">
+      <a href="{{ url_for('report.index') }}" class="btn-dg-outline w-100" style="justify-content:center;">Reset</a>
+    </div>
+  </form>
+</div>
+
+{% if reports %}
+<div class="dg-card">
+  <div class="table-responsive">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>Report ID</th>
+          <th>File Name</th>
+          <th>Type</th>
+          <th>Detection Result</th>
+          <th>Confidence</th>
+          <th>Generated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td class="mono" style="font-size:11px;color:var(--accent);">{{ r.report_id }}</td>
+          <td>{{ r.get('file_name', 'N/A') }}</td>
+          <td><span style="font-size:11px;background:rgba(133,79,108,0.2);padding:2px 8px;border-radius:6px;">{{ (r.get('file_type','') | title) }}</span></td>
+          <td>
+            {% set pred = (r.get('prediction','') or '') | upper %}
+            {% if 'REAL' in pred and 'AI' not in pred %}
+              <span class="badge-real">Real</span>
+            {% elif 'INCONCLUSIVE' in pred %}
+              <span class="badge-inconc">Inconclusive</span>
+            {% elif r.get('prediction') %}
+              <span class="badge-fake">{{ r.prediction[:22] }}</span>
+            {% else %}
+              <span class="badge-unknown">–</span>
+            {% endif %}
+          </td>
+          <td class="mono">
+            {% if r.get('confidence') %}{{ '%.1f'|format(r.confidence) }}%{% else %}–{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ r.generated_at.strftime('%d %b %Y %H:%M') if r.generated_at else 'N/A' }}
+          </td>
+          <td>
+            <a href="{{ url_for('report.download', report_id=r.report_id) }}" class="btn-dg btn-sm">
+              <i class="fa-solid fa-download"></i> Download
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-3">
+    <div style="font-size:13px;color:var(--text-muted);">Page {{ page }}</div>
+    <nav>
+      <ul class="pagination dg-pagination mb-0" style="gap:4px;">
+        {% if page > 1 %}
+        <li class="page-item"><a class="page-link" href="?page={{ page-1 }}&search={{ search }}&status={{ filter_status }}">‹ Prev</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page }}</span></li>
+        {% if reports|length == 15 %}
+        <li class="page-item"><a class="page-link" href="?page={{ page+1 }}&search={{ search }}&status={{ filter_status }}">Next ›</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% else %}
+<div class="empty-state dg-card">
+  <i class="fa-solid fa-file-pdf"></i>
+  <h3>No reports generated yet</h3>
+  <p>Run an analysis and click "Generate PDF Report" to create your first report.</p>
+  <a href="{{ url_for('image.upload_page') }}" class="btn-dg" style="margin-top:12px;">Start Analysis</a>
+</div>
+{% endif %}
+{% endblock %}

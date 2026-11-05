@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Users – Admin{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="fa-solid fa-users me-2"></i>Registered Users</h1>
+  <p>System-wide user list (passwords are never shown).</p>
+</div>
+
+<div class="dg-card">
+  <div class="table-responsive">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="mono" style="font-size:11px;color:var(--text-muted);">{{ u._id }}</td>
+          <td>{{ u.name }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+            <span class="badge-fake">Admin</span>
+            {% else %}
+            <span class="badge-real">User</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ u.created_at.strftime('%d %b %Y') if u.created_at else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-3" style="font-size:13px;color:var(--text-muted);">Showing {{ users|length }} of {{ total }} users · Page {{ page }}</div>
+</div>
+{% endblock %}
